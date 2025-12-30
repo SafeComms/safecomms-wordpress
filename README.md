@@ -2,6 +2,8 @@
 
 Server-side moderation for posts and comments using SafeComms.
 
+SafeComms is a powerful content moderation platform designed to keep your digital communities safe. It provides real-time analysis of text to detect and filter harmful content, including hate speech, harassment, and spam.
+
 ## Requirements
 - PHP 8.0+
 - WordPress 5.8+ (Tested up to 6.9)
@@ -34,4 +36,3 @@ Server-side moderation for posts and comments using SafeComms.
 ## Notes
 - API key is never rendered in clear text after save.
 - On comment rate-limit/error, comments are held unless fail-open is enabled.
-- Only HTTPS endpoints are used for the SafeComms API call.
