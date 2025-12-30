@@ -1,0 +1,51 @@
+name: Build WordPress Plugin
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Plugin Code
+      uses: actions/checkout@v4
+      with:
+        path: plugin
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.0'
+
+    - name: Prepare Build Directory
+      run: |
+        mkdir build
+        # Copy plugin files to a clean directory for zipping
+        # Exclude git, github workflows, tests, and dev files
+        rsync -av --progress plugin/ build/safecomms-moderation/ \
+          --exclude '.git' \
+          --exclude '.github' \
+          --exclude '.gitignore' \
+          --exclude 'tests' \
+          --exclude 'README.md' \
+          --exclude 'composer.json' \
+          --exclude 'phpunit.xml'
+        
+    - name: Create Zip Archive
+      run: |
+        cd build
+        zip -r safecomms-moderation.zip safecomms-moderation
+        echo "Zip created at build/safecomms-moderation.zip"
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: safecomms-moderation-plugin
+        path: build/safecomms-moderation.zip
+        if-no-files-found: error

@@ -1,0 +1,10 @@
+# Ignore built artifacts
+*.zip
+build/
+
+# Ignore dependencies
+vendor/
+
+# WP specific
+.DS_Store
+Thumbs.db
