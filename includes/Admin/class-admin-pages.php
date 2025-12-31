@@ -512,15 +512,17 @@ class Admin_Pages {
 	 * @return void
 	 */
 	private function apply_comment_decision( \WP_Comment $comment, array $decision ): void {
-		$hash = md5( (string) $comment->comment_content );
-		$this->moderation_repository->upsert( 'comment', $comment->comment_ID, $decision, $hash );
-		update_comment_meta( $comment->comment_ID, 'safecomms_status', $decision['status'] ?? 'unknown' );
-		update_comment_meta( $comment->comment_ID, 'safecomms_reason', $decision['reason'] ?? '' );
-		update_comment_meta( $comment->comment_ID, 'safecomms_score', $decision['score'] ?? null );
-		update_comment_meta( $comment->comment_ID, 'safecomms_checked_at', current_time( 'mysql' ) );
+		$hash       = md5( (string) $comment->comment_content );
+		$comment_id = (int) $comment->comment_ID;
+
+		$this->moderation_repository->upsert( 'comment', $comment_id, $decision, $hash );
+		update_comment_meta( $comment_id, 'safecomms_status', $decision['status'] ?? 'unknown' );
+		update_comment_meta( $comment_id, 'safecomms_reason', $decision['reason'] ?? '' );
+		update_comment_meta( $comment_id, 'safecomms_score', $decision['score'] ?? null );
+		update_comment_meta( $comment_id, 'safecomms_checked_at', current_time( 'mysql' ) );
 
 		if ( ( $decision['status'] ?? '' ) === 'block' ) {
-			wp_set_comment_status( $comment->comment_ID, '0' );
+			wp_set_comment_status( $comment_id, 'hold' );
 		}
 	}
 
@@ -541,7 +543,9 @@ class Admin_Pages {
 		} elseif ( isset( $_COOKIE['safecomms_block_notice'] ) ) {
 			$reason = sanitize_text_field( wp_unslash( $_COOKIE['safecomms_block_notice'] ) );
 			// Clear cookie.
-			setcookie( 'safecomms_block_notice', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+			$cookie_path   = defined( 'COOKIEPATH' ) ? COOKIEPATH : '/';
+			$cookie_domain = defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '';
+			setcookie( 'safecomms_block_notice', '', time() - 3600, $cookie_path, $cookie_domain, is_ssl(), true );
 		}
 
 		if ( $reason ) {

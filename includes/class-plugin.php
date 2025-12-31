@@ -119,7 +119,7 @@ class Plugin {
 		$this->logs_repository       = new Logs_Repository();
 		$this->moderation_repository = new Moderation_Repository();
 		$this->logger                = new Logger( $this->logs_repository );
-		$this->settings              = new Settings( $this->logger );
+		$this->settings              = new Settings();
 		$this->client                = new Client( $this->settings, $this->logger );
 		$this->settings->set_client( $this->client );
 		$this->retry_queue      = new Retry_Queue( $this->settings, $this->client, $this->logger, $this->moderation_repository );

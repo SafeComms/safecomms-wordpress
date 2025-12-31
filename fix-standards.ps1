@@ -7,7 +7,7 @@ $composerPhar = Join-Path $pluginDir "composer.phar"
 Write-Host "Starting SafeComms WordPress Standards Fixer..."
 
 # --- 1. Bootstrap PHP ---
-Write-Host "`n[1/4] Checking PHP..."
+Write-Host "`n[1/6] Checking PHP..."
 
 if (-not (Test-Path $phpExe)) {
     Write-Host "PHP not found locally. Installing portable PHP 8.3..."
@@ -51,7 +51,7 @@ if (-not (Test-Path $phpExe)) {
 }
 
 # --- 2. Bootstrap Composer ---
-Write-Host "`n[2/4] Checking Composer..."
+Write-Host "`n[2/6] Checking Composer..."
 
 if (-not (Test-Path $composerPhar)) {
     Write-Host "Composer not found locally. Downloading composer.phar..."
@@ -68,7 +68,7 @@ $phpCmd = $phpExe
 $composerCmd = "$phpExe $composerPhar"
 
 # --- 3. Install Dependencies ---
-Write-Host "`n[3/4] Installing Dependencies..."
+Write-Host "`n[3/6] Installing Dependencies..."
 
 if (-not (Test-Path (Join-Path $pluginDir "vendor/bin/phpcbf"))) {
     Write-Host "Installing development dependencies locally (vendor/)..."
@@ -78,7 +78,7 @@ if (-not (Test-Path (Join-Path $pluginDir "vendor/bin/phpcbf"))) {
 }
 
 # --- 4. Run PHPCBF (Auto-fixer) ---
-Write-Host "`n[4/5] Running PHPCBF to auto-fix coding standards..."
+Write-Host "`n[4/6] Running PHPCBF to auto-fix coding standards..."
 $phpcbf = Join-Path $pluginDir "vendor/bin/phpcbf"
 
 if (Test-Path $phpcbf) {
@@ -97,7 +97,7 @@ if (Test-Path $phpcbf) {
 }
 
 # --- 5. Run PHPCS (Report remaining issues) ---
-Write-Host "`n[5/5] Running PHPCS to report remaining issues..."
+Write-Host "`n[5/6] Running PHPCS to report remaining issues..."
 $phpcs = Join-Path $pluginDir "vendor/bin/phpcs"
 
 if (Test-Path $phpcs) {
@@ -112,6 +112,22 @@ if (Test-Path $phpcs) {
     }
 } else {
     Write-Error "Could not find vendor/bin/phpcs."
+}
+
+# --- 6. Run PHPStan ---
+Write-Host "`n[6/6] Running PHPStan..."
+$phpstan = Join-Path $pluginDir "vendor/bin/phpstan"
+
+if (Test-Path $phpstan) {
+    $proc = Start-Process -FilePath $phpExe -ArgumentList "$phpstan analyse --memory-limit=1G" -WorkingDirectory $pluginDir -NoNewWindow -PassThru -Wait
+    
+    if ($proc.ExitCode -eq 0) {
+        Write-Host "PHPStan passed!" -ForegroundColor Green
+    } else {
+        Write-Warning "PHPStan found errors (Exit Code: $($proc.ExitCode))"
+    }
+} else {
+    Write-Error "Could not find vendor/bin/phpstan. Installation may have failed."
 }
 
 Write-Host "`nDone!"

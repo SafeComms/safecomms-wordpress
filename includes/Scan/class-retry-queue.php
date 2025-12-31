@@ -231,7 +231,7 @@ class Retry_Queue {
 				update_comment_meta( $ref_id, 'safecomms_checked_at', current_time( 'mysql' ) );
 
 				if ( 'block' === $status ) {
-					wp_set_comment_status( $ref_id, '0' );
+					wp_set_comment_status( $ref_id, 'hold' );
 				}
 			}
 		} finally {

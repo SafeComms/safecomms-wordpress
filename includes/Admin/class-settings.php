@@ -27,13 +27,6 @@ class Settings {
 	public const OPTION_KEY = 'safecomms_options';
 
 	/**
-	 * Logger.
-	 *
-	 * @var Logger
-	 */
-	private Logger $logger;
-
-	/**
 	 * API Client.
 	 *
 	 * @var Client|null
@@ -49,11 +42,8 @@ class Settings {
 
 	/**
 	 * Constructor.
-	 *
-	 * @param Logger $logger Logger.
 	 */
-	public function __construct( Logger $logger ) {
-		$this->logger = $logger;
+	public function __construct() {
 		$this->schema = $this->define_schema();
 	}
 
@@ -651,7 +641,7 @@ class Settings {
 	private function render_text_field( string $key ): void {
 		$options = get_option( self::OPTION_KEY, $this->defaults() );
 		$value   = isset( $options[ $key ] ) ? $options[ $key ] : $this->schema[ $key ]['default'];
-		echo '<input type="text" name="' . esc_attr( self::OPTION_KEY ) . '[' . esc_attr( $key ) . ']" value="' . esc_attr( $value ) . '" class="regular-text" />';
+		echo '<input type="text" name="' . esc_attr( self::OPTION_KEY ) . '[' . esc_attr( $key ) . ']" value="' . esc_attr( (string) $value ) . '" class="regular-text" />';
 	}
 
 	/**
@@ -691,7 +681,7 @@ class Settings {
 			function () use ( $key, $min, $max ) {
 				$options = get_option( self::OPTION_KEY, $this->defaults() );
 				$value   = isset( $options[ $key ] ) ? (int) $options[ $key ] : $this->schema[ $key ]['default'];
-				echo '<input type="number" min="' . esc_attr( $min ) . '" max="' . esc_attr( $max ) . '" name="' . esc_attr( self::OPTION_KEY ) . '[' . esc_attr( $key ) . ']" value="' . esc_attr( $value ) . '" />';
+				echo '<input type="number" min="' . esc_attr( (string) $min ) . '" max="' . esc_attr( (string) $max ) . '" name="' . esc_attr( self::OPTION_KEY ) . '[' . esc_attr( $key ) . ']" value="' . esc_attr( (string) $value ) . '" />';
 			}
 		);
 	}
@@ -729,7 +719,7 @@ class Settings {
 		echo '</div>';
 
 		echo '<div style="background: #f0f0f1; border-radius: 4px; height: 20px; overflow: hidden;">';
-		echo '<div style="background: #2271b1; height: 100%; width: ' . esc_attr( $percent ) . '%;"></div>';
+		echo '<div style="background: #2271b1; height: 100%; width: ' . esc_attr( (string) $percent ) . '%;"></div>';
 		echo '</div>';
 
 		if ( ! empty( $warnings ) ) {

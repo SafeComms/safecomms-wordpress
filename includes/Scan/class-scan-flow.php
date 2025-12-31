@@ -59,13 +59,6 @@ class Scan_Flow {
 	private Moderation_Repository $moderation_repository;
 
 	/**
-	 * Updating flag to avoid recursion.
-	 *
-	 * @var bool
-	 */
-	private bool $is_updating = false;
-
-	/**
 	 * Pending decisions keyed by cache hash.
 	 *
 	 * @var array
@@ -401,7 +394,9 @@ class Scan_Flow {
 			if ( $user_id ) {
 				set_transient( 'safecomms_block_notice_' . $user_id, sanitize_text_field( $decision['reason'] ), 60 );
 			} elseif ( ! headers_sent() ) {
-				setcookie( 'safecomms_block_notice', sanitize_text_field( $decision['reason'] ), time() + 60, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+				$cookie_path   = defined( 'COOKIEPATH' ) ? COOKIEPATH : '/';
+				$cookie_domain = defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '';
+				setcookie( 'safecomms_block_notice', sanitize_text_field( $decision['reason'] ), time() + 60, $cookie_path, $cookie_domain, is_ssl(), true );
 			}
 		}
 	}
