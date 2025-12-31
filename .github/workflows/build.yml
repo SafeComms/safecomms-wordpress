@@ -40,18 +40,21 @@ jobs:
           ${{ runner.os }}-composer-
 
     - name: Install Dependencies
-      run: composer update --prefer-dist --no-progress
+      run: composer install --prefer-dist --no-progress
       working-directory: plugin
-
-    - name: Upload Composer Lock
-      uses: actions/upload-artifact@v4
-      with:
-        name: composer-lock
-        path: plugin/composer.lock
 
     - name: Run PHPCS
-      run: vendor/bin/phpcs
+      run: |
+        vendor/bin/phpcs --report=full --report-file=phpcs-report.txt || (cat phpcs-report.txt && exit 1)
+        cat phpcs-report.txt
       working-directory: plugin
+
+    - name: Upload PHPCS Report
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: phpcs-report
+        path: plugin/phpcs-report.txt
 
     - name: Run PHPStan
       run: vendor/bin/phpstan analyze
