@@ -4,7 +4,10 @@ build/
 
 # Ignore dependencies
 vendor/
+php/
+composer.phar
 
 # WP specific
 .DS_Store
 Thumbs.db
+phpcs-report.txt
