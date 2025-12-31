@@ -42,22 +42,28 @@ jobs:
     - name: Create Zip Archive
       run: |
         cd build
-        zip -r safecomms-moderation.zip safecomms-moderation
-        echo "Zip created at build/safecomms-moderation.zip"
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          ZIP_NAME="safecomms-wordpress-plugin-${{ github.ref_name }}.zip"
+        else
+          ZIP_NAME="safecomms-wordpress-plugin.zip"
+        fi
+        zip -r "$ZIP_NAME" safecomms-moderation
+        echo "Zip created at build/$ZIP_NAME"
+        echo "ZIP_PATH=build/$ZIP_NAME" >> $GITHUB_ENV
 
     - name: Upload Artifact
       if: startsWith(github.ref, 'refs/tags/')
       uses: actions/upload-artifact@v4
       with:
         name: safecomms-moderation-plugin
-        path: build/safecomms-moderation.zip
+        path: ${{ env.ZIP_PATH }}
         if-no-files-found: error
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: build/safecomms-moderation.zip
+        files: ${{ env.ZIP_PATH }}
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
