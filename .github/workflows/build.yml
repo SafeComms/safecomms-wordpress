@@ -24,6 +24,38 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.0'
+        tools: composer:v2
+
+    - name: Get Composer Cache Directory
+      id: composer-cache
+      run: |
+        echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache Composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-composer-
+
+    - name: Install Dependencies
+      run: composer update --prefer-dist --no-progress
+      working-directory: plugin
+
+    - name: Upload Composer Lock
+      uses: actions/upload-artifact@v4
+      with:
+        name: composer-lock
+        path: plugin/composer.lock
+
+    - name: Run PHPCS
+      run: vendor/bin/phpcs
+      working-directory: plugin
+
+    - name: Run PHPStan
+      run: vendor/bin/phpstan analyze
+      working-directory: plugin
 
     - name: Prepare Build Directory
       run: |
