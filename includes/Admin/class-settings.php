@@ -179,7 +179,7 @@ class Settings {
 			),
 			'shortcode_admins_only'   => array(
 				'type'    => 'bool',
-				'default' => false,
+				'default' => true,
 			),
 			'profile_post_title'      => array(
 				'type'    => 'string',
@@ -199,11 +199,11 @@ class Settings {
 			),
 			'enable_post_title_scan'  => array(
 				'type'    => 'bool',
-				'default' => false,
+				'default' => true,
 			),
 			'enable_post_body_scan'   => array(
 				'type'    => 'bool',
-				'default' => false,
+				'default' => true,
 			),
 			'custom_hooks'            => array(
 				'type'    => 'array',
@@ -232,11 +232,12 @@ class Settings {
 			)
 		);
 
+		// -- Tab: General --
 		add_settings_section(
-			'safecomms_main_section',
-			esc_html__( 'SafeComms Settings', 'safecomms' ),
+			'safecomms_general_section',
+			esc_html__( 'General Settings', 'safecomms' ),
 			function (): void {
-				echo '<p>' . esc_html__( 'Configure SafeComms API access and scanning behaviour.', 'safecomms' ) . '</p>';
+				echo '<p>' . esc_html__( 'Configure SafeComms API access.', 'safecomms' ) . '</p>';
 
 				if ( $this->client ) {
 					$usage = $this->client->get_usage();
@@ -249,7 +250,7 @@ class Settings {
 					}
 				}
 			},
-			'safecomms'
+			'safecomms_general'
 		);
 
 		$this->register_field(
@@ -282,16 +283,56 @@ class Settings {
 						echo '<p class="description">' . esc_html__( 'Leave blank to use the Network API Key.', 'safecomms' ) . '</p>';
 					}
 				}
-			}
+			},
+			'safecomms_general_section',
+			'safecomms_general'
 		);
 
-		$this->register_checkbox_field( 'enable_posts', __( 'Scan posts', 'safecomms' ) );
-		$this->register_checkbox_field( 'enable_comments', __( 'Scan comments', 'safecomms' ) );
-		$this->register_checkbox_field( 'auto_scan', __( 'Auto-scan on publish/submit', 'safecomms' ) );
-		$this->register_checkbox_field( 'notices_enabled', __( 'Show admin notices', 'safecomms' ) );
-		$this->register_checkbox_field( 'show_rejection_reason', __( 'Show rejection reason to users', 'safecomms' ) );
-		$this->register_checkbox_field( 'shortcode_admins_only', __( 'Restrict shortcode visibility to admins only', 'safecomms' ) );
-		$this->register_checkbox_field( 'fail_open_comments', __( 'Allow comments to pass when API unreachable (fail-open)', 'safecomms' ) );
+		// -- Tab: Scanning Rules --
+		add_settings_section(
+			'safecomms_content_section',
+			esc_html__( 'Content Scope', 'safecomms' ),
+			function (): void {
+				echo '<p>' . esc_html__( 'Choose which content types to scan automatically.', 'safecomms' ) . '</p>';
+			},
+			'safecomms_scanning'
+		);
+
+		// Post Scanning Group
+		$this->register_field(
+			'enable_posts',
+			__( 'Enable Post Scanning', 'safecomms' ),
+			function () {
+				$options = get_option( self::OPTION_KEY, $this->defaults() );
+				$checked = ! empty( $options['enable_posts'] );
+				echo '<label><input type="checkbox" id="safecomms_enable_posts" name="' . esc_attr( self::OPTION_KEY ) . '[enable_posts]" value="1" ' . checked( $checked, true, false ) . ' /> <strong>' . esc_html__( 'Master Switch', 'safecomms' ) . '</strong></label>';
+				echo '<p class="description">' . esc_html__( 'Enable scanning for WordPress posts. Required for the options below.', 'safecomms' ) . '</p>';
+			},
+			'safecomms_content_section',
+			'safecomms_scanning'
+		);
+
+		$this->register_checkbox_field( 'enable_post_title_scan', __( 'Scan Titles', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning' );
+		$this->register_checkbox_field( 'enable_post_body_scan', __( 'Scan Body Content', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning' );
+
+		// Comment Scanning Group
+		$this->register_checkbox_field( 'enable_comments', __( 'Enable Comment Scanning', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning', 'Automatically scan new comments as they are posted.' );
+
+		// User Scanning Group
+		$this->register_checkbox_field( 'enable_username_scan', __( 'Enable Username Scanning', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning', 'Check usernames during new user registration to prevent offensive names.' );
+		
+		// General Scanning
+		$this->register_checkbox_field( 'auto_scan', __( 'Auto-scan on publish/submit', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning', 'Automatically send content to SafeComms when a post is published or comment is submitted.' );
+
+
+		add_settings_section(
+			'safecomms_actions_section',
+			esc_html__( 'Moderation Actions', 'safecomms' ),
+			function (): void {
+				echo '<p>' . esc_html__( 'Configure how SafeComms handles flagged content.', 'safecomms' ) . '</p>';
+			},
+			'safecomms_scanning'
+		);
 
 		$this->register_field(
 			'enable_text_replacement',
@@ -301,7 +342,9 @@ class Settings {
 				$checked = ! empty( $options['enable_text_replacement'] );
 				echo '<label><input type="checkbox" name="' . esc_attr( self::OPTION_KEY ) . '[enable_text_replacement]" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Rewrite unsafe content (Sanitize)', 'safecomms' ) . '</label>';
 				echo '<p class="description">' . esc_html__( 'Requires Starter Plan or higher.', 'safecomms' ) . '</p>';
-			}
+			},
+			'safecomms_actions_section',
+			'safecomms_scanning'
 		);
 
 		$this->register_field(
@@ -312,7 +355,9 @@ class Settings {
 				$checked = ! empty( $options['enable_pii_redaction'] );
 				echo '<label><input type="checkbox" name="' . esc_attr( self::OPTION_KEY ) . '[enable_pii_redaction]" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Redact personally identifiable information', 'safecomms' ) . '</label>';
 				echo '<p class="description">' . esc_html__( 'Requires Starter Plan or higher.', 'safecomms' ) . '</p>';
-			}
+			},
+			'safecomms_actions_section',
+			'safecomms_scanning'
 		);
 
 		$this->register_field(
@@ -323,36 +368,64 @@ class Settings {
 				$checked = ! empty( $options['enable_non_english'] );
 				echo '<label><input type="checkbox" name="' . esc_attr( self::OPTION_KEY ) . '[enable_non_english]" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Support languages other than English', 'safecomms' ) . '</label>';
 				echo '<p class="description">' . esc_html__( 'Requires Pro Plan or higher.', 'safecomms' ) . '</p>';
-			}
+			},
+			'safecomms_actions_section',
+			'safecomms_scanning'
 		);
+
+
+		// -- Tab: Advanced --
+		add_settings_section(
+			'safecomms_notifications_section',
+			esc_html__( 'Notifications & Feedback', 'safecomms' ),
+			function () {},
+			'safecomms_advanced'
+		);
+
+		$this->register_checkbox_field( 'notices_enabled', __( 'Show admin notices', 'safecomms' ), 'safecomms_notifications_section', 'safecomms_advanced' );
+		$this->register_checkbox_field( 'show_rejection_reason', __( 'Show rejection reason to users', 'safecomms' ), 'safecomms_notifications_section', 'safecomms_advanced', 'When content is blocked, display the specific reason (e.g., "Hate Speech") to the user.' );
+		$this->register_checkbox_field( 'shortcode_admins_only', __( 'Restrict shortcode visibility to admins only', 'safecomms' ), 'safecomms_notifications_section', 'safecomms_advanced', 'If enabled, the [safecomms_status] shortcode will only be visible to logged-in administrators.' );
+
+
+		add_settings_section(
+			'safecomms_system_section',
+			esc_html__( 'System & Reliability', 'safecomms' ),
+			function () {},
+			'safecomms_advanced'
+		);
+
+		$this->register_checkbox_field( 'fail_open_comments', __( 'Allow comments to pass when API unreachable (fail-open)', 'safecomms' ), 'safecomms_system_section', 'safecomms_advanced', 'If the SafeComms API is down or unreachable, should comments still be published? Recommended: Enabled.' );
+		$this->register_number_field( 'cache_ttl', __( 'Cache TTL (seconds)', 'safecomms' ), 60, 86400, 'safecomms_system_section', 'safecomms_advanced', 'How long to store moderation results locally to save API tokens.' );
+		$this->register_number_field( 'max_retry_attempts', __( 'Max retry attempts', 'safecomms' ), 1, 10, 'safecomms_system_section', 'safecomms_advanced', 'Number of times to retry a failed API request before giving up.' );
 
 		add_settings_section(
 			'safecomms_profiles_section',
 			esc_html__( 'Moderation Profiles', 'safecomms' ),
 			function (): void {
 				echo '<p>' . esc_html__( 'Specify SafeComms Moderation Profile IDs for different content types. Leave blank to use the default profile.', 'safecomms' ) . '</p>';
+				echo '<p class="description">' . esc_html__( 'Profile IDs can be found in your SafeComms dashboard under "Profiles". They allow you to customize sensitivity levels per content type.', 'safecomms' ) . '</p>';
 			},
-			'safecomms'
+			'safecomms_advanced'
 		);
 
-		$this->register_checkbox_field( 'enable_post_title_scan', __( 'Scan Post Title', 'safecomms' ), 'safecomms_profiles_section' );
 		$this->register_field(
 			'profile_post_title',
 			__( 'Post Title Profile ID', 'safecomms' ),
 			function () {
 				$this->render_text_field( 'profile_post_title' );
 			},
-			'safecomms_profiles_section'
+			'safecomms_profiles_section',
+			'safecomms_advanced'
 		);
 
-		$this->register_checkbox_field( 'enable_post_body_scan', __( 'Scan Post Body', 'safecomms' ), 'safecomms_profiles_section' );
 		$this->register_field(
 			'profile_post_body',
 			__( 'Post Body Profile ID', 'safecomms' ),
 			function () {
 				$this->render_text_field( 'profile_post_body' );
 			},
-			'safecomms_profiles_section'
+			'safecomms_profiles_section',
+			'safecomms_advanced'
 		);
 
 		$this->register_field(
@@ -361,21 +434,19 @@ class Settings {
 			function () {
 				$this->render_text_field( 'profile_comment_body' );
 			},
-			'safecomms_profiles_section'
+			'safecomms_profiles_section',
+			'safecomms_advanced'
 		);
 
-		$this->register_checkbox_field( 'enable_username_scan', __( 'Scan Username on Registration', 'safecomms' ), 'safecomms_profiles_section' );
 		$this->register_field(
 			'profile_username',
 			__( 'Username Profile ID', 'safecomms' ),
 			function () {
 				$this->render_text_field( 'profile_username' );
 			},
-			'safecomms_profiles_section'
+			'safecomms_profiles_section',
+			'safecomms_advanced'
 		);
-
-		$this->register_number_field( 'cache_ttl', __( 'Cache TTL (seconds)', 'safecomms' ), 60, 86400 );
-		$this->register_number_field( 'max_retry_attempts', __( 'Max retry attempts', 'safecomms' ), 1, 10 );
 	}
 
 	/**
@@ -388,13 +459,63 @@ class Settings {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
+
+		$api_key    = $this->get( 'api_key' );
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'general';
+		$page_slug  = 'safecomms_' . $active_tab;
+		
+		if ( 'scanning' === $active_tab ) {
+			?>
+			<script>
+				document.addEventListener('DOMContentLoaded', function() {
+					var masterSwitch = document.getElementById('safecomms_enable_posts');
+					var dependentRows = document.querySelectorAll('.safecomms-row-enable_post_title_scan, .safecomms-row-enable_post_body_scan');
+
+					function toggleDependentRows() {
+						var isChecked = masterSwitch.checked;
+						dependentRows.forEach(function(row) {
+							// Add indentation for visual hierarchy
+							var th = row.querySelector('th');
+							if (th) th.style.paddingLeft = '30px';
+							
+							if (isChecked) {
+								row.style.display = 'table-row';
+							} else {
+								row.style.display = 'none';
+							}
+						});
+					}
+
+					if (masterSwitch) {
+						masterSwitch.addEventListener('change', toggleDependentRows);
+						toggleDependentRows(); // Initial state
+					}
+				});
+			</script>
+			<?php
+		}
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'SafeComms Moderation', 'safecomms' ); ?></h1>
+			
+			<nav class="nav-tab-wrapper">
+				<a href="?page=safecomms_settings&tab=general" class="nav-tab <?php echo 'general' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php echo esc_html__( 'General', 'safecomms' ); ?></a>
+				<a href="?page=safecomms_settings&tab=scanning" class="nav-tab <?php echo 'scanning' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php echo esc_html__( 'Scanning Rules', 'safecomms' ); ?></a>
+				<a href="?page=safecomms_settings&tab=advanced" class="nav-tab <?php echo 'advanced' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php echo esc_html__( 'Advanced', 'safecomms' ); ?></a>
+			</nav>
+
+			<?php if ( empty( $api_key ) ) : ?>
+				<div class="notice notice-info inline">
+					<p>
+						<?php echo esc_html__( 'Getting started is free! SafeComms offers a generous free tier.', 'safecomms' ); ?>
+						<a href="https://safecomms.dev/register" target="_blank"><?php echo esc_html__( 'Get your API Key', 'safecomms' ); ?></a>
+					</p>
+				</div>
+			<?php endif; ?>
 			<form method="post" action="options.php">
 				<?php
 				settings_fields( 'safecomms_options_group' );
-				do_settings_sections( 'safecomms' );
+				do_settings_sections( $page_slug );
 				submit_button();
 				?>
 			</form>
@@ -620,15 +741,17 @@ class Settings {
 	 * @param string   $label           Field label.
 	 * @param callable $render_callback Render callback.
 	 * @param string   $section         Section ID.
+	 * @param string   $page            Page ID.
 	 * @return void
 	 */
-	private function register_field( string $key, string $label, callable $render_callback, string $section = 'safecomms_main_section' ): void {
+	private function register_field( string $key, string $label, callable $render_callback, string $section = 'safecomms_main_section', string $page = 'safecomms' ): void {
 		add_settings_field(
 			$key,
 			esc_html( $label ),
 			$render_callback,
-			'safecomms',
-			$section
+			$page,
+			$section,
+			array( 'class' => 'safecomms-row-' . $key )
 		);
 	}
 
@@ -650,18 +773,24 @@ class Settings {
 	 * @param string $key     Field key.
 	 * @param string $label   Field label.
 	 * @param string $section Section ID.
+	 * @param string $page    Page ID.
+	 * @param string $description Optional tooltip/description.
 	 * @return void
 	 */
-	private function register_checkbox_field( string $key, string $label, string $section = 'safecomms_main_section' ): void {
+	private function register_checkbox_field( string $key, string $label, string $section = 'safecomms_main_section', string $page = 'safecomms', string $description = '' ): void {
 		$this->register_field(
 			$key,
 			$label,
-			function () use ( $key ) {
+			function () use ( $key, $description ) {
 				$options = get_option( self::OPTION_KEY, $this->defaults() );
 				$checked = ! empty( $options[ $key ] );
 				echo '<label><input type="checkbox" name="' . esc_attr( self::OPTION_KEY ) . '[' . esc_attr( $key ) . ']" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Enabled', 'safecomms' ) . '</label>';
+				if ( ! empty( $description ) ) {
+					echo '<p class="description">' . esc_html( $description ) . '</p>';
+				}
 			},
-			$section
+			$section,
+			$page
 		);
 	}
 
@@ -672,17 +801,25 @@ class Settings {
 	 * @param string $label Field label.
 	 * @param int    $min   Minimum value.
 	 * @param int    $max   Maximum value.
+	 * @param string $section Section ID.
+	 * @param string $page    Page ID.
+	 * @param string $description Optional tooltip/description.
 	 * @return void
 	 */
-	private function register_number_field( string $key, string $label, int $min, int $max ): void {
+	private function register_number_field( string $key, string $label, int $min, int $max, string $section = 'safecomms_main_section', string $page = 'safecomms', string $description = '' ): void {
 		$this->register_field(
 			$key,
 			$label,
-			function () use ( $key, $min, $max ) {
+			function () use ( $key, $min, $max, $description ) {
 				$options = get_option( self::OPTION_KEY, $this->defaults() );
 				$value   = isset( $options[ $key ] ) ? (int) $options[ $key ] : $this->schema[ $key ]['default'];
 				echo '<input type="number" min="' . esc_attr( (string) $min ) . '" max="' . esc_attr( (string) $max ) . '" name="' . esc_attr( self::OPTION_KEY ) . '[' . esc_attr( $key ) . ']" value="' . esc_attr( (string) $value ) . '" />';
-			}
+				if ( ! empty( $description ) ) {
+					echo '<p class="description">' . esc_html( $description ) . '</p>';
+				}
+			},
+			$section,
+			$page
 		);
 	}
 

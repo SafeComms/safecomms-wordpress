@@ -42,7 +42,7 @@ final class Autoloader {
 		$class_name     = array_pop( $parts );
 
 		// Convert ClassName to class-name.
-		$class_filename = 'class-' . strtolower( str_replace( '_', '-', preg_replace( '/(?<!^)[A-Z]/', '-$0', $class_name ) ) );
+		$class_filename = 'class-' . str_replace( '--', '-', strtolower( str_replace( '_', '-', preg_replace( '/(?<!^)[A-Z]/', '-$0', $class_name ) ) ) );
 
 		$directory = implode( '/', $parts );
 		if ( ! empty( $directory ) ) {
