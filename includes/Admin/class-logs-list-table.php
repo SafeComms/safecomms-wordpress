@@ -114,7 +114,11 @@ class Logs_List_Table extends \WP_List_Table {
 		$context = json_decode( (string) $item['context'], true );
 
 		if ( ! empty( $context['request_id'] ) ) {
-			$message .= ' <span class="description" style="display:block; color: #888;">' . sprintf( esc_html__( 'Request ID: %s', 'safecomms' ), '<code>' . esc_html( $context['request_id'] ) . '</code>' ) . '</span>';
+			$message .= ' <span class="description" style="display:block; color: #888;">' . sprintf(
+				/* translators: %s: Request ID */
+				esc_html__( 'Request ID: %s', 'safecomms' ),
+				'<code>' . esc_html( $context['request_id'] ) . '</code>'
+			) . '</span>';
 		}
 
 		return $message;

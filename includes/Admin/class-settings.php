@@ -132,91 +132,91 @@ class Settings {
 	 */
 	private function define_schema(): array {
 		return array(
-			'api_key'                 => array(
+			'api_key'                  => array(
 				'type'    => 'string',
 				'default' => '',
 			),
-			'enable_posts'            => array(
+			'enable_posts'             => array(
 				'type'    => 'bool',
 				'default' => false,
 			),
-			'enable_comments'         => array(
+			'enable_comments'          => array(
 				'type'    => 'bool',
 				'default' => true,
 			),
-			'auto_scan'               => array(
+			'auto_scan'                => array(
 				'type'    => 'bool',
 				'default' => true,
 			),
-			'notices_enabled'         => array(
+			'notices_enabled'          => array(
 				'type'    => 'bool',
 				'default' => true,
 			),
-			'fail_open_comments'      => array(
+			'fail_open_comments'       => array(
 				'type'    => 'bool',
 				'default' => false,
 			),
-			'enable_text_replacement' => array(
+			'enable_text_replacement'  => array(
 				'type'    => 'bool',
 				'default' => false,
 			),
-			'enable_pii_redaction'    => array(
+			'enable_pii_redaction'     => array(
 				'type'    => 'bool',
 				'default' => false,
 			),
-			'enable_non_english'      => array(
+			'enable_non_english'       => array(
 				'type'    => 'bool',
 				'default' => false,
 			),
-			'cache_ttl'               => array(
+			'cache_ttl'                => array(
 				'type'    => 'int',
 				'default' => 600,
 			),
-			'max_retry_attempts'      => array(
+			'max_retry_attempts'       => array(
 				'type'    => 'int',
 				'default' => 3,
 			),
-			'retry_schedule'          => array(
+			'retry_schedule'           => array(
 				'type'    => 'array',
 				'default' => array( 300, 900, 2700 ),
 			),
-			'show_rejection_reason'   => array(
+			'show_rejection_reason'    => array(
 				'type'    => 'bool',
 				'default' => false,
 			),
-			'shortcode_admins_only'   => array(
+			'shortcode_admins_only'    => array(
 				'type'    => 'bool',
 				'default' => true,
 			),
-			'profile_post_title'      => array(
+			'profile_post_title'       => array(
 				'type'    => 'string',
 				'default' => '',
 			),
-			'profile_post_body'       => array(
+			'profile_post_body'        => array(
 				'type'    => 'string',
 				'default' => '',
 			),
-			'profile_comment_body'    => array(
+			'profile_comment_body'     => array(
 				'type'    => 'string',
 				'default' => '',
 			),
-			'profile_username'        => array(
+			'profile_username'         => array(
 				'type'    => 'string',
 				'default' => '',
 			),
-			'enable_post_title_scan'  => array(
+			'enable_post_title_scan'   => array(
 				'type'    => 'bool',
 				'default' => true,
 			),
-			'enable_post_body_scan'   => array(
+			'enable_post_body_scan'    => array(
 				'type'    => 'bool',
 				'default' => true,
 			),
-			'custom_hooks'            => array(
+			'custom_hooks'             => array(
 				'type'    => 'array',
 				'default' => array(),
 			),
-			'enable_username_scan'    => array(
+			'enable_username_scan'     => array(
 				'type'    => 'bool',
 				'default' => false,
 			),
@@ -299,12 +299,12 @@ class Settings {
 					}
 				}
 
-				$options        = get_option( self::OPTION_KEY, $this->defaults() );
-				$has_key        = ! empty( $options['api_key'] );
-				$value          = $has_key ? self::API_KEY_PLACEHOLDER : '';
-				
+				$options = get_option( self::OPTION_KEY, $this->defaults() );
+				$has_key = ! empty( $options['api_key'] );
+				$value   = $has_key ? self::API_KEY_PLACEHOLDER : '';
+
 				echo '<input type="password" name="' . esc_attr( self::OPTION_KEY ) . '[api_key]" value="' . esc_attr( $value ) . '" autocomplete="new-password" class="regular-text" />';
-				
+
 				if ( $has_key ) {
 					echo '<p class="description">' . esc_html__( 'Key saved.', 'safecomms' ) . '</p>';
 				}
@@ -331,7 +331,7 @@ class Settings {
 			'safecomms_scanning'
 		);
 
-		// Post Scanning Group
+		// Post Scanning Group.
 		$this->register_field(
 			'enable_posts',
 			__( 'Enable Post Scanning', 'safecomms' ),
@@ -349,15 +349,14 @@ class Settings {
 		$this->register_checkbox_field( 'enable_post_title_scan', __( 'Scan Titles', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning' );
 		$this->register_checkbox_field( 'enable_post_body_scan', __( 'Scan Body Content', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning' );
 
-		// Comment Scanning Group
+		// Comment Scanning Group.
 		$this->register_checkbox_field( 'enable_comments', __( 'Enable Comment Scanning', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning', 'Automatically scan new comments as they are posted.' );
 
-		// User Scanning Group
+		// User Scanning Group.
 		$this->register_checkbox_field( 'enable_username_scan', __( 'Enable Username Scanning', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning', 'Check usernames during new user registration to prevent offensive names.' );
-		
-		// General Scanning
-		$this->register_checkbox_field( 'auto_scan', __( 'Auto-scan on publish/submit', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning', 'Automatically send content to SafeComms when a post is published or comment is submitted.' );
 
+		// General Scanning.
+		$this->register_checkbox_field( 'auto_scan', __( 'Auto-scan on publish/submit', 'safecomms' ), 'safecomms_content_section', 'safecomms_scanning', 'Automatically send content to SafeComms when a post is published or comment is submitted.' );
 
 		add_settings_section(
 			'safecomms_actions_section',
@@ -397,7 +396,7 @@ class Settings {
 		);
 
 		$this->register_checkbox_field( 'auto_approve_comments', __( 'Auto-approve clean comments', 'safecomms' ), 'safecomms_actions_section', 'safecomms_scanning', 'If content is marked as safe (or sanitized), automatically approve the comment.' );
-		
+
 		$this->register_field(
 			'auto_approve_new_authors',
 			'',
@@ -447,7 +446,6 @@ class Settings {
 			'safecomms_scanning'
 		);
 
-
 		// -- Tab: Advanced --
 		add_settings_section(
 			'safecomms_notifications_section',
@@ -459,7 +457,6 @@ class Settings {
 		$this->register_checkbox_field( 'notices_enabled', __( 'Show admin notices', 'safecomms' ), 'safecomms_notifications_section', 'safecomms_advanced' );
 		$this->register_checkbox_field( 'show_rejection_reason', __( 'Show rejection reason to users', 'safecomms' ), 'safecomms_notifications_section', 'safecomms_advanced', 'When content is blocked, display the specific reason (e.g., "Hate Speech") to the user.' );
 		$this->register_checkbox_field( 'shortcode_admins_only', __( 'Restrict shortcode visibility to admins only', 'safecomms' ), 'safecomms_notifications_section', 'safecomms_advanced', 'If enabled, the [safecomms_status] shortcode will only be visible to logged-in administrators.' );
-
 
 		add_settings_section(
 			'safecomms_system_section',
@@ -535,9 +532,9 @@ class Settings {
 		}
 
 		$api_key    = $this->get( 'api_key' );
-		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'general';
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$page_slug  = 'safecomms_' . $active_tab;
-		
+
 		if ( 'scanning' === $active_tab ) {
 			?>
 			<script>

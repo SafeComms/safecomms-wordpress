@@ -601,9 +601,9 @@ class Scan_Flow {
 				if ( $this->settings->get( 'auto_approve_comments', false ) ) {
 					if ( 'spam' !== $approved && 'trash' !== $approved ) {
 						// Check if we are being prudent about new authors.
-						if ( 0 == $approved || '0' === $approved ) {
+						if ( 0 === $approved || '0' === $approved ) {
 							// If WP native setting "Comment author must have... approved" is ON.
-							if ( get_option( 'comment_whitelist' ) ) {
+							if ( get_option( 'comment_previously_approved' ) ) {
 								if ( ! $this->settings->get( 'auto_approve_new_authors', false ) ) {
 									// If strict mode is ON, we respect WP's decision to hold it (since it's likely due to being a new author).
 									// Unless the author actually HAS previously approved comments, but usually WP handles that check correctly.
