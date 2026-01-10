@@ -531,8 +531,9 @@ class Settings {
 			return;
 		}
 
-		$api_key    = $this->get( 'api_key' );
-		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$api_key = $this->get( 'api_key' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'general';
 		$page_slug  = 'safecomms_' . $active_tab;
 
 		if ( 'scanning' === $active_tab ) {
