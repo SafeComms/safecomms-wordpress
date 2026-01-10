@@ -24,7 +24,7 @@ class Client {
 	 *
 	 * @var string
 	 */
-	private const API_URL = 'https://api.safecomms.dev/api/v1/public/';
+	private const API_URL = 'https://api.safecomms.dev/';
 
 	/**
 	 * Settings.
@@ -105,6 +105,8 @@ class Client {
 			'sslverify' => true,
 		);
 
+		$this->logger->debug( 'scan_request', 'Sending content to SafeComms', $context );
+
 		$response = wp_remote_post( $this->get_api_url() . 'moderation/text', $args );
 
 		if ( is_wp_error( $response ) ) {
@@ -118,7 +120,18 @@ class Client {
 
 		$code          = wp_remote_retrieve_response_code( $response );
 		$body_response = wp_remote_retrieve_body( $response );
+		$request_id    = wp_remote_retrieve_header( $response, 'x-request-id' );
 		$result        = json_decode( $body_response, true );
+
+		// Check response body for ID if not in header, or overwrite.
+		if ( ! empty( $result['id'] ) ) {
+			$request_id = $result['id'];
+		}
+
+		// Append request_id to context.
+		if ( $request_id ) {
+			$context['request_id'] = $request_id;
+		}
 
 		if ( 402 === $code ) {
 			$this->logger->error( 'quota', 'SafeComms plan quota exceeded.', $context );
@@ -178,6 +191,16 @@ class Client {
 			$status = $result['isClean'] ? 'allow' : 'block';
 		}
 
+		$this->logger->info(
+			'scan_result',
+			sprintf( 'Scan completed (%s): %s', $args['body']['type'] ?? 'unknown', $status ?? 'allow' ),
+			array(
+				'status' => $status,
+				'score'  => $result['score'] ?? 0,
+				'reason' => $result['reason'] ?? '',
+			) + $context
+		);
+
 		return array(
 			'status'  => $status ?? 'allow',
 			'reason'  => $result['reason'] ?? ( $result['severity'] ?? '' ),
@@ -214,9 +237,11 @@ class Client {
 
 		$code = wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $code ) {
+			$body = wp_remote_retrieve_body( $response );
 			return array(
-				'error' => 'api_error',
-				'code'  => $code,
+				'error'   => 'api_error',
+				'code'    => $code,
+				'message' => $body,
 			);
 		}
 

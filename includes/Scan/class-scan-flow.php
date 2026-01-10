@@ -91,6 +91,7 @@ class Scan_Flow {
 		add_filter( 'wp_insert_post_data', array( $this, 'filter_post_data' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'on_save_post' ), 10, 3 );
 		add_filter( 'preprocess_comment', array( $this, 'maybe_scan_comment' ) );
+		add_filter( 'pre_comment_approved', array( $this, 'filter_comment_status' ), 99, 2 );
 		add_action( 'wp_insert_comment', array( $this, 'on_comment_insert' ), 10, 2 );
 		add_filter( 'registration_errors', array( $this, 'scan_registration' ), 10, 3 );
 
@@ -544,6 +545,10 @@ class Scan_Flow {
 
 		if ( ! empty( $decision['details']['safeContent'] ) ) {
 			$commentdata['comment_content'] = $decision['details']['safeContent'];
+			// If auto-approve is enabled, approve sanitized content.
+			if ( $this->settings->get( 'auto_approve_comments', false ) ) {
+				$commentdata['comment_approved'] = '1';
+			}
 		} elseif ( 'block' === $decision['status'] ) {
 			$commentdata['comment_approved'] = '0';
 			if ( $this->settings->get( 'show_rejection_reason', false ) ) {
@@ -552,6 +557,11 @@ class Scan_Flow {
 					esc_html__( 'Your comment was blocked: ', 'safecomms' ) . esc_html( $decision['reason'] ),
 					array( 'status' => 403 )
 				);
+			}
+		} elseif ( 'allow' === $decision['status'] ) {
+			// If auto-approve is enabled, approve allowed content.
+			if ( $this->settings->get( 'auto_approve_comments', false ) ) {
+				$commentdata['comment_approved'] = '1';
 			}
 		}
 
@@ -562,6 +572,54 @@ class Scan_Flow {
 		}
 
 		return $commentdata;
+	}
+
+	/**
+	 * Filter comment approval status.
+	 *
+	 * @param string|int $approved    Approval status.
+	 * @param array      $commentdata Comment data.
+	 * @return string|int
+	 */
+	public function filter_comment_status( $approved, array $commentdata ) {
+		if ( ! $this->settings->get( 'enable_comments', true ) || ! $this->settings->get( 'auto_scan', true ) ) {
+			return $approved;
+		}
+
+		$content      = (string) ( $commentdata['comment_content'] ?? '' );
+		$profile_id   = $this->settings->get( 'profile_comment_body', '' );
+		$hash         = md5( $content . $profile_id );
+		$comment_id   = $commentdata['comment_ID'] ?? 0;
+		$post_id      = $commentdata['comment_post_ID'] ?? 0;
+		$cache_key_id = $comment_id ? (int) $comment_id : (int) $post_id;
+
+		$decision = $this->maybe_get_cache( 'comment', $cache_key_id, $hash );
+
+		if ( $decision ) {
+			if ( 'allow' === $decision['status'] ) {
+				// Only upgrade to approved if explicit spam/trash hasn't been set by other plugins.
+				if ( $this->settings->get( 'auto_approve_comments', false ) ) {
+					if ( 'spam' !== $approved && 'trash' !== $approved ) {
+						// Check if we are being prudent about new authors.
+						if ( 0 == $approved || '0' === $approved ) {
+							// If WP native setting "Comment author must have... approved" is ON.
+							if ( get_option( 'comment_whitelist' ) ) {
+								if ( ! $this->settings->get( 'auto_approve_new_authors', false ) ) {
+									// If strict mode is ON, we respect WP's decision to hold it (since it's likely due to being a new author).
+									// Unless the author actually HAS previously approved comments, but usually WP handles that check correctly.
+									return $approved;
+								}
+							}
+						}
+						return 1;
+					}
+				}
+			} elseif ( 'block' === $decision['status'] ) {
+				return 'spam';
+			}
+		}
+
+		return $approved;
 	}
 
 	/**

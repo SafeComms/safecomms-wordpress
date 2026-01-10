@@ -192,6 +192,11 @@ class Moderation_List_Table extends \WP_List_Table {
 	 * @return void
 	 */
 	public function prepare_items(): void {
+		$columns               = $this->get_columns();
+		$hidden                = array();
+		$sortable              = $this->get_sortable_columns();
+		$this->_column_headers = array( $columns, $hidden, $sortable );
+
 		$per_page     = $this->get_items_per_page( 'safecomms_moderation_per_page', 20 );
 		$current_page = $this->get_pagenum();
 

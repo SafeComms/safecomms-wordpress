@@ -90,6 +90,7 @@ class Admin_Pages {
 		add_action( 'admin_init', array( $this, 'handle_actions' ) );
 		add_action( 'admin_notices', array( $this, 'render_notices' ) );
 		add_action( 'admin_notices', array( $this, 'render_block_notice' ) );
+		add_action( 'admin_notices', array( $this, 'render_checklist_notice' ) );
 	}
 
 	/**
@@ -273,6 +274,15 @@ class Admin_Pages {
 			}
 			update_option( 'safecomms_notice_baseline', $this->moderation_repository->blocked_count() );
 			wp_safe_redirect( remove_query_arg( array( 'safecomms_reset_notice', '_wpnonce' ) ) );
+			exit;
+		}
+
+		if ( ! empty( $_GET['safecomms_dismiss_checklist'] ) ) {
+			if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'safecomms_action' ) ) {
+				return;
+			}
+			update_user_meta( get_current_user_id(), 'safecomms_checklist_dismissed', 1 );
+			wp_safe_redirect( remove_query_arg( array( 'safecomms_dismiss_checklist', '_wpnonce' ) ) );
 			exit;
 		}
 	}
@@ -592,5 +602,66 @@ class Admin_Pages {
 		echo '<p>' . esc_html( sprintf( __( 'SafeComms blocked %d items since last reset.', 'safecomms' ), $delta ) ) . '</p>';
 		echo '<p><a class="button" href="' . esc_url( $reset_url ) . '">' . esc_html__( 'Reset counter', 'safecomms' ) . '</a></p>';
 		echo '</div>';
+	}
+
+	/**
+	 * Render checklist notice for onboarding.
+	 *
+	 * @return void
+	 */
+	public function render_checklist_notice(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$screen = get_current_screen();
+		if ( ! $screen || false === strpos( $screen->id, 'safecomms_settings' ) ) {
+			return;
+		}
+
+		if ( get_user_meta( get_current_user_id(), 'safecomms_checklist_dismissed', true ) ) {
+			return;
+		}
+
+		$dismiss_url = add_query_arg( array( 'safecomms_dismiss_checklist' => 1 ) );
+		$dismiss_url = wp_nonce_url( $dismiss_url, 'safecomms_action' );
+
+		$api_key      = $this->settings->get( 'api_key' );
+		$auto_approve = $this->settings->get( 'auto_approve_comments' );
+
+		?>
+		<div class="notice notice-info safecomms-checklist-notice" style="padding-bottom: 10px;">
+			<h3><?php esc_html_e( 'Welcome to SafeComms! Let\'s get you set up.', 'safecomms' ); ?></h3>
+			<p><?php esc_html_e( 'Here are a few recommended steps to ensure optimal protection:', 'safecomms' ); ?></p>
+			<ul style="list-style: none; margin-left: 0; padding-left: 0;">
+				<li style="margin-bottom: 5px;">
+					<?php if ( $api_key ) : ?>
+						<span class="dashicons dashicons-yes" style="color: #46b450;"></span>
+					<?php else : ?>
+						<span class="dashicons dashicons-no" style="color: #dc3232;"></span>
+					<?php endif; ?>
+					<strong><?php esc_html_e( 'Connect your API Key:', 'safecomms' ); ?></strong>
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=safecomms_settings' ) ); ?>"><?php esc_html_e( 'Configure', 'safecomms' ); ?></a>
+				</li>
+				<li style="margin-bottom: 5px;">
+					<?php if ( $auto_approve ) : ?>
+						<span class="dashicons dashicons-yes" style="color: #46b450;"></span>
+					<?php else : ?>
+						<span class="dashicons dashicons-marker" style="color: #ffb900;"></span>
+					<?php endif; ?>
+					<strong><?php esc_html_e( 'Enable Auto-Approve for safe comments:', 'safecomms' ); ?></strong>
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=safecomms_settings&tab=scanning#safecomms_auto_approve_comments' ) ); ?>"><?php esc_html_e( 'Enable', 'safecomms' ); ?></a>
+				</li>
+				<li style="margin-bottom: 5px;">
+					<span class="dashicons dashicons-chart-bar"></span>
+					<strong><?php esc_html_e( 'Review your Moderation Logs:', 'safecomms' ); ?></strong>
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=safecomms_logs' ) ); ?>"><?php esc_html_e( 'View Logs', 'safecomms' ); ?></a>
+				</li>
+			</ul>
+			<p>
+				<a class="button" href="<?php echo esc_url( $dismiss_url ); ?>"><?php esc_html_e( 'Dismiss this checklist', 'safecomms' ); ?></a>
+			</p>
+		</div>
+		<?php
 	}
 }

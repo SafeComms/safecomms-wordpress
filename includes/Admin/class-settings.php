@@ -27,6 +27,13 @@ class Settings {
 	public const OPTION_KEY = 'safecomms_options';
 
 	/**
+	 * API Key Placeholder.
+	 *
+	 * @var string
+	 */
+	private const API_KEY_PLACEHOLDER = 'this is a long placeholder, the key is saved securely';
+
+	/**
 	 * API Client.
 	 *
 	 * @var Client|null
@@ -213,6 +220,14 @@ class Settings {
 				'type'    => 'bool',
 				'default' => false,
 			),
+			'auto_approve_comments'    => array(
+				'type'    => 'bool',
+				'default' => false,
+			),
+			'auto_approve_new_authors' => array(
+				'type'    => 'bool',
+				'default' => false,
+			),
 		);
 	}
 
@@ -243,7 +258,21 @@ class Settings {
 					$usage = $this->client->get_usage();
 					if ( isset( $usage['error'] ) ) {
 						if ( 'no_key' !== $usage['error'] ) {
-							echo '<div class="notice notice-error inline"><p>' . esc_html__( 'Could not fetch usage: ', 'safecomms' ) . esc_html( $usage['error'] ) . '</p></div>';
+							$error_msg = $usage['error'];
+							if ( isset( $usage['code'] ) ) {
+								$error_msg .= ' (' . $usage['code'] . ')';
+							}
+							if ( isset( $usage['message'] ) ) {
+								$decoded = json_decode( $usage['message'], true );
+								if ( is_array( $decoded ) && isset( $decoded['message'] ) ) {
+									$error_msg .= ': ' . $decoded['message'];
+								} elseif ( is_array( $decoded ) && isset( $decoded['error'] ) ) {
+									$error_msg .= ': ' . $decoded['error'];
+								} else {
+									$error_msg .= ': ' . $usage['message'];
+								}
+							}
+							echo '<div class="notice notice-error inline"><p>' . esc_html__( 'Could not fetch usage: ', 'safecomms' ) . esc_html( $error_msg ) . '</p></div>';
 						}
 					} else {
 						$this->render_usage_bar( $usage );
@@ -270,10 +299,14 @@ class Settings {
 					}
 				}
 
-				$options = get_option( self::OPTION_KEY, $this->defaults() );
-				echo '<input type="password" name="' . esc_attr( self::OPTION_KEY ) . '[api_key]" value="" autocomplete="new-password" />';
-				if ( ! empty( $options['api_key'] ) ) {
-					echo '<p class="description">' . esc_html__( 'Key stored. Leave blank to keep existing.', 'safecomms' ) . '</p>';
+				$options        = get_option( self::OPTION_KEY, $this->defaults() );
+				$has_key        = ! empty( $options['api_key'] );
+				$value          = $has_key ? self::API_KEY_PLACEHOLDER : '';
+				
+				echo '<input type="password" name="' . esc_attr( self::OPTION_KEY ) . '[api_key]" value="' . esc_attr( $value ) . '" autocomplete="new-password" class="regular-text" />';
+				
+				if ( $has_key ) {
+					echo '<p class="description">' . esc_html__( 'Key saved.', 'safecomms' ) . '</p>';
 				}
 				echo '<p class="description">' . esc_html__( 'For enhanced security, define SAFECOMMS_API_KEY in wp-config.php instead of storing in database.', 'safecomms' ) . '</p>';
 
@@ -305,6 +338,7 @@ class Settings {
 			function () {
 				$options = get_option( self::OPTION_KEY, $this->defaults() );
 				$checked = ! empty( $options['enable_posts'] );
+				echo '<input type="hidden" name="' . esc_attr( self::OPTION_KEY ) . '[enable_posts]" value="0" />';
 				echo '<label><input type="checkbox" id="safecomms_enable_posts" name="' . esc_attr( self::OPTION_KEY ) . '[enable_posts]" value="1" ' . checked( $checked, true, false ) . ' /> <strong>' . esc_html__( 'Master Switch', 'safecomms' ) . '</strong></label>';
 				echo '<p class="description">' . esc_html__( 'Enable scanning for WordPress posts. Required for the options below.', 'safecomms' ) . '</p>';
 			},
@@ -340,6 +374,7 @@ class Settings {
 			function () {
 				$options = get_option( self::OPTION_KEY, $this->defaults() );
 				$checked = ! empty( $options['enable_text_replacement'] );
+				echo '<input type="hidden" name="' . esc_attr( self::OPTION_KEY ) . '[enable_text_replacement]" value="0" />';
 				echo '<label><input type="checkbox" name="' . esc_attr( self::OPTION_KEY ) . '[enable_text_replacement]" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Rewrite unsafe content (Sanitize)', 'safecomms' ) . '</label>';
 				echo '<p class="description">' . esc_html__( 'Requires Starter Plan or higher.', 'safecomms' ) . '</p>';
 			},
@@ -353,8 +388,46 @@ class Settings {
 			function () {
 				$options = get_option( self::OPTION_KEY, $this->defaults() );
 				$checked = ! empty( $options['enable_pii_redaction'] );
+				echo '<input type="hidden" name="' . esc_attr( self::OPTION_KEY ) . '[enable_pii_redaction]" value="0" />';
 				echo '<label><input type="checkbox" name="' . esc_attr( self::OPTION_KEY ) . '[enable_pii_redaction]" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Redact personally identifiable information', 'safecomms' ) . '</label>';
 				echo '<p class="description">' . esc_html__( 'Requires Starter Plan or higher.', 'safecomms' ) . '</p>';
+			},
+			'safecomms_actions_section',
+			'safecomms_scanning'
+		);
+
+		$this->register_checkbox_field( 'auto_approve_comments', __( 'Auto-approve clean comments', 'safecomms' ), 'safecomms_actions_section', 'safecomms_scanning', 'If content is marked as safe (or sanitized), automatically approve the comment.' );
+		
+		$this->register_field(
+			'auto_approve_new_authors',
+			'',
+			function () {
+				$options = get_option( self::OPTION_KEY, $this->defaults() );
+				$checked = ! empty( $options['auto_approve_new_authors'] );
+				$auto    = ! empty( $options['auto_approve_comments'] );
+				$class   = $auto ? '' : 'disabled';
+				echo '<input type="hidden" name="' . esc_attr( self::OPTION_KEY ) . '[auto_approve_new_authors]" value="0" />';
+				echo '<label class="' . esc_attr( $class ) . '"><input type="checkbox" id="safecomms_auto_approve_new_authors" name="' . esc_attr( self::OPTION_KEY ) . '[auto_approve_new_authors]" value="1" ' . checked( $checked, true, false ) . ' ' . disabled( $auto, false, false ) . ' /> ' . esc_html__( 'Bypass "Comment author must have a previously approved comment"', 'safecomms' ) . '</label>';
+				echo '<p class="description">' . esc_html__( 'If enabled, SafeComms will approve comments from new authors even if WordPress is configured to hold them for moderation. Use with caution.', 'safecomms' ) . '</p>';
+				?>
+				<script>
+				document.addEventListener("DOMContentLoaded", function() {
+					const main = document.getElementById('safecomms_auto_approve_comments');
+					const sub = document.getElementById('safecomms_auto_approve_new_authors');
+					const label = sub.closest('label');
+					if (main && sub) {
+						main.addEventListener('change', function() {
+							sub.disabled = !this.checked;
+							if (this.checked) {
+								label.classList.remove('disabled');
+							} else {
+								label.classList.add('disabled');
+							}
+						});
+					}
+				});
+				</script>
+				<?php
 			},
 			'safecomms_actions_section',
 			'safecomms_scanning'
@@ -366,6 +439,7 @@ class Settings {
 			function () {
 				$options = get_option( self::OPTION_KEY, $this->defaults() );
 				$checked = ! empty( $options['enable_non_english'] );
+				echo '<input type="hidden" name="' . esc_attr( self::OPTION_KEY ) . '[enable_non_english]" value="0" />';
 				echo '<label><input type="checkbox" name="' . esc_attr( self::OPTION_KEY ) . '[enable_non_english]" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Support languages other than English', 'safecomms' ) . '</label>';
 				echo '<p class="description">' . esc_html__( 'Requires Pro Plan or higher.', 'safecomms' ) . '</p>';
 			},
@@ -520,6 +594,22 @@ class Settings {
 				?>
 			</form>
 		</div>
+		<script>
+		document.addEventListener("DOMContentLoaded", function() {
+			if (window.location.hash) {
+				const target = document.querySelector(window.location.hash);
+				if (target) {
+					const row = target.closest("tr");
+					if (row) {
+						row.style.transition = "background-color 0.5s";
+						row.style.backgroundColor = "#ffe082";
+						setTimeout(() => { row.style.backgroundColor = ""; }, 2000);
+						target.focus();
+					}
+				}
+			}
+		});
+		</script>
 		<?php
 	}
 
@@ -638,7 +728,7 @@ class Settings {
 	 * @return array
 	 */
 	public function sanitize_options( array $input ): array {
-		$clean = $this->defaults();
+		$clean = get_option( self::OPTION_KEY, $this->defaults() );
 
 		foreach ( $this->schema as $key => $field ) {
 			if ( ! array_key_exists( $key, $input ) ) {
@@ -722,10 +812,21 @@ class Settings {
 			}
 		}
 
-		if ( ! empty( $input['api_key'] ) ) {
-			$clean['api_key'] = sanitize_text_field( $input['api_key'] );
+		if ( ! empty( $input['api_key'] ) && self::API_KEY_PLACEHOLDER !== $input['api_key'] ) {
+			$new_key = sanitize_text_field( $input['api_key'] );
+			if ( 0 === strpos( $new_key, 'sk_sc' ) ) {
+				$clean['api_key'] = $new_key;
+			} else {
+				add_settings_error( self::OPTION_KEY, 'invalid_api_key', __( 'Invalid API Key format. Key must start with sk_sc.', 'safecomms' ) );
+				$existing = get_option( self::OPTION_KEY, $this->defaults() );
+				if ( ! empty( $existing['api_key'] ) ) {
+					$clean['api_key'] = $existing['api_key'];
+				}
+			}
 		} else {
 			$existing = get_option( self::OPTION_KEY, $this->defaults() );
+			// If input was explicitly cleared (and not the placeholder), allow empty.
+			// But here we rely on the placeholder value to signal "no change".
 			if ( ! empty( $existing['api_key'] ) ) {
 				$clean['api_key'] = $existing['api_key'];
 			}
@@ -784,7 +885,8 @@ class Settings {
 			function () use ( $key, $description ) {
 				$options = get_option( self::OPTION_KEY, $this->defaults() );
 				$checked = ! empty( $options[ $key ] );
-				echo '<label><input type="checkbox" name="' . esc_attr( self::OPTION_KEY ) . '[' . esc_attr( $key ) . ']" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Enabled', 'safecomms' ) . '</label>';
+				echo '<input type="hidden" name="' . esc_attr( self::OPTION_KEY ) . '[' . esc_attr( $key ) . ']" value="0" />';
+				echo '<label><input type="checkbox" id="safecomms_' . esc_attr( $key ) . '" name="' . esc_attr( self::OPTION_KEY ) . '[' . esc_attr( $key ) . ']" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Enabled', 'safecomms' ) . '</label>';
 				if ( ! empty( $description ) ) {
 					echo '<p class="description">' . esc_html( $description ) . '</p>';
 				}
@@ -830,10 +932,10 @@ class Settings {
 	 * @return void
 	 */
 	private function render_usage_bar( array $usage ): void {
-		$used    = $usage['TokensUsed'] ?? 0;
-		$limit   = $usage['TokenLimit'] ?? 0;
+		$used    = $usage['tokensUsed'] ?? $usage['TokensUsed'] ?? 0;
+		$limit   = $usage['tokenLimit'] ?? $usage['TokenLimit'] ?? 0;
 		$percent = $limit > 0 ? min( 100, ( $used / $limit ) * 100 ) : 0;
-		$tier    = $usage['Tier'] ?? 'Free';
+		$tier    = $usage['tier'] ?? $usage['Tier'] ?? 'Free';
 
 		$warnings = array();
 		if ( in_array( $tier, array( 'Free', 'Basic', 'Starter' ), true ) ) {

@@ -248,6 +248,13 @@ class Plugin {
 			return;
 		}
 
+		// DB Update / Install check.
+		$installed_version = get_option( 'safecomms_version' );
+		if ( version_compare( $installed_version, SAFECOMMS_PLUGIN_VERSION, '<' ) ) {
+			Installer::install();
+			update_option( 'safecomms_version', SAFECOMMS_PLUGIN_VERSION );
+		}
+
 		$this->settings->register();
 		$this->retry_queue->register();
 		$this->scan_flow->register();

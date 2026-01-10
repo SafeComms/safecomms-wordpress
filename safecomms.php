@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SafeComms Moderation
  * Description: Server-side content moderation for WordPress posts and comments using SafeComms.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Requires at least: 5.8
  * Tested up to: 6.9
  * Requires PHP: 8.0
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SAFECOMMS_PLUGIN_VERSION', '0.2.0' );
+define( 'SAFECOMMS_PLUGIN_VERSION', '0.3.0' );
 define( 'SAFECOMMS_PLUGIN_FILE', __FILE__ );
 define( 'SAFECOMMS_PLUGIN_DIR', __DIR__ . '/' );
 define( 'SAFECOMMS_PLUGIN_URL', plugins_url( '/', __FILE__ ) );

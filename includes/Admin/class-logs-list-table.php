@@ -84,6 +84,11 @@ class Logs_List_Table extends \WP_List_Table {
 	 * @return void
 	 */
 	public function prepare_items(): void {
+		$columns               = $this->get_columns();
+		$hidden                = array();
+		$sortable              = $this->get_sortable_columns();
+		$this->_column_headers = array( $columns, $hidden, $sortable );
+
 		$per_page     = $this->get_items_per_page( 'safecomms_logs_per_page', 20 );
 		$current_page = $this->get_pagenum();
 
@@ -99,6 +104,23 @@ class Logs_List_Table extends \WP_List_Table {
 	}
 
 	/**
+	 * Message column handler with Request ID support.
+	 *
+	 * @param array $item Item data.
+	 * @return string
+	 */
+	protected function column_message( array $item ): string {
+		$message = esc_html( (string) $item['message'] );
+		$context = json_decode( (string) $item['context'], true );
+
+		if ( ! empty( $context['request_id'] ) ) {
+			$message .= ' <span class="description" style="display:block; color: #888;">' . sprintf( esc_html__( 'Request ID: %s', 'safecomms' ), '<code>' . esc_html( $context['request_id'] ) . '</code>' ) . '</span>';
+		}
+
+		return $message;
+	}
+
+	/**
 	 * Default column handler.
 	 *
 	 * @param array  $item        Item data.
@@ -111,8 +133,6 @@ class Logs_List_Table extends \WP_List_Table {
 			case 'severity':
 			case 'created_at':
 				return esc_html( (string) $item[ $column_name ] );
-			case 'message':
-				return esc_html( (string) $item['message'] );
 			default:
 				return '';
 		}
